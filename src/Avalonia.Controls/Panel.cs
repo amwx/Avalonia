@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See licence.md file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using Avalonia.Media;
 using Avalonia.Metadata;
 
@@ -105,28 +103,63 @@ namespace Avalonia.Controls
         /// <param name="e">The event args.</param>
         protected virtual void ChildrenChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            List<Control> controls;
-
             switch (e.Action)
             {
                 case NotifyCollectionChangedAction.Add:
-                    controls = e.NewItems.OfType<Control>().ToList();
-                    LogicalChildren.InsertRange(e.NewStartingIndex, controls);
-                    VisualChildren.InsertRange(e.NewStartingIndex, e.NewItems.OfType<Visual>());
+                {
+                    if (e.NewItems.Count == 1)
+                    {
+                        IControl control = (IControl)e.NewItems[0];
+
+                        LogicalChildren.Insert(e.NewStartingIndex, control);
+                        VisualChildren.Insert(e.NewStartingIndex, control);
+                    }
+                    else
+                    {
+                        var items = e.NewItems;
+                        var controls = new IControl[items.Count];
+
+                        items.CopyTo(controls, 0);
+
+                        LogicalChildren.InsertRange(e.NewStartingIndex, controls);
+                        VisualChildren.InsertRange(e.NewStartingIndex, controls);
+                    }
+
                     break;
+                }
 
                 case NotifyCollectionChangedAction.Move:
+                {
                     LogicalChildren.MoveRange(e.OldStartingIndex, e.OldItems.Count, e.NewStartingIndex);
                     VisualChildren.MoveRange(e.OldStartingIndex, e.OldItems.Count, e.NewStartingIndex);
                     break;
+                }
 
                 case NotifyCollectionChangedAction.Remove:
-                    controls = e.OldItems.OfType<Control>().ToList();
-                    LogicalChildren.RemoveAll(controls);
-                    VisualChildren.RemoveAll(e.OldItems.OfType<Visual>());
+                {
+                    if (e.OldItems.Count == 1)
+                    {
+                        IControl control = (IControl)e.OldItems[0];
+
+                        LogicalChildren.Remove(control);
+                        VisualChildren.Remove(control);
+                    }
+                    else
+                    {
+                        var items = e.OldItems;
+                        var controls = new IControl[items.Count];
+
+                        items.CopyTo(controls, 0);
+
+                        LogicalChildren.RemoveAll(controls);
+                        VisualChildren.RemoveAll(controls);
+                    }
+
                     break;
+                }
 
                 case NotifyCollectionChangedAction.Replace:
+                {
                     for (var i = 0; i < e.OldItems.Count; ++i)
                     {
                         var index = i + e.OldStartingIndex;
@@ -135,9 +168,12 @@ namespace Avalonia.Controls
                         VisualChildren[index] = child;
                     }
                     break;
+                }
 
                 case NotifyCollectionChangedAction.Reset:
+                {
                     throw new NotSupportedException();
+                }
             }
 
             InvalidateMeasure();
